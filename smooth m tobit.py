@@ -72,7 +72,7 @@ t = 500
 # Covariance
 Sigmatrue = np.zeros((3,3))
 Sigmatrue[0,0] = 4
-Sigmatrue[0,1] = -0.3
+Sigmatrue[0,1] = -0.7
 Sigmatrue[0,2] = -0.5
 Sigmatrue[1,0] = Sigmatrue[0,1]
 Sigmatrue[1,1] = 3
