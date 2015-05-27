@@ -75,13 +75,13 @@ Sigmatrue[0,0] = 4
 Sigmatrue[0,1] = -0.7
 Sigmatrue[0,2] = -0.5
 Sigmatrue[1,0] = Sigmatrue[0,1]
-Sigmatrue[1,1] = 3
-Sigmatrue[1,2] = -0.5
+Sigmatrue[1,1] = 2
+Sigmatrue[1,2] = -0.3
 Sigmatrue[2,0] = Sigmatrue[0,2]
 Sigmatrue[2,1] = Sigmatrue[1,2]
-Sigmatrue[2,2] = 2
-d1t = 1
-d2t = 1
+Sigmatrue[2,2] = 5
+d1t = 0.5
+d2t = 0.5
 gt=3
 b1t=4
 b2t=5
@@ -94,10 +94,9 @@ storebmc=zeros((mcno,3))
 storedmc=zeros((mcno,2))
 storesmc=zeros((mcno,9))
 
-
 for j in range(0,mcno):
     #starting values
-    phi=10*eye(3)
+    phi=1*eye(3)
     d1 = 2
     d2 = 3
     g=3
@@ -145,8 +144,6 @@ for j in range(0,mcno):
     # Sigmatrue[3,2] = Sigmatrue[2,3]
     # Sigmatrue[3,3] = 1.3
 
-
-
     out=ldl(Sigmatrue)
     htrue=out[1]
     atrue=out[0]
@@ -184,11 +181,11 @@ for j in range(0,mcno):
         p31draw=p31p32draw[0]
         p32draw=p31p32draw[1]
         # p21draw=0
-        ia=((1,0,0),(-1*p21draw,1,0),(-1*p31draw,-1*p32draw,1))
+        ia=conc(((1,0,0),(-1*p21draw,1,0),conc(conc((-1*p31draw,-1*p32draw,1),1),1)))
         a=inv(ia)
         # a=atrue
         h=((om1,0,0),(0,om2,0),(0,0,om3))
-        #h=htrue
+        # h=htrue
         sigdraw=dot(a,dot(h,a.T))
         stores[i,:]=np.reshape(sigdraw,(1,9))
 
@@ -208,32 +205,33 @@ for j in range(0,mcno):
         bdraw=rmvnorm(bmeansq,varb)
         bdraw=xp(bdraw,1)
         storeb[i,:]=bdraw.T
-        gamma=bdraw[2]
-        ytilde2=y-xp(xmat[:,2],1)*gamma
+        gamma=bdraw[0]
+        ytilde2=y-xp(xmat[:,0],1)*gamma
         a=np.array([[1, 0, 0],[0, 1, 0]])
-        lr=conc((bdraw[0:2,].T,ones((1,1))),1)
+        lr=conc((bdraw[1:3,].T,ones((1,1))),1)
         a=conc((a,lr))
         omega=dot(dot(a,sigdraw),a.T)
         iu=inv(chol(omega))
         xxy=conc((conc((x1,x2),1),ytilde2),1)
-        uxxy=dot(iu,xxy.T).T
+        uxxy=dot(iu.T,xxy.T).T
         uxxy=conc((conc((uxxy[:,0],uxxy[:,1])),uxxy[:,2]))
         z1z=conc((z1,zeros((nobs,1))))
         zz2=conc((zeros((nobs,1)),z2))
-        b1z1=bdraw[0]*z1
-        b2z2=bdraw[1]*z2
+        b1z1=bdraw[1]*z1
+        b2z2=bdraw[2]*z2
         z1zzz2=conc((z1z,zz2),1)
         b1z1b2z2=conc((b1z1,b2z2))
         bigz=conc((z1zzz2,b1z1b2z2),1)
-        ubigz=dot(iu,bigz.T).T
+        ubigz=dot(iu.T,bigz.T).T
         temp=conc((xp(ubigz[0:nobs,2],1),xp(ubigz[nobs:2*nobs,2],1)),axis=1)
         ubigz=conc((ubigz[:,0:2],temp))
-        dmean=dot(inv(dot(ubigz.T,ubigz)),dot(ubigz.T,uxxy))
-        ddraw=rmvnorm(dmean,eye(2))
-        d1draw=ddraw[0]
-        d2draw=ddraw[1]
+        dvar=inv(dot(ubigz.T,ubigz))
+        dmean=dot(dvar,dot(ubigz.T,uxxy))
+        ddraw=rmvnorm(dmean,dvar)
         # ddraw=(d1t,d2t)
         # ddraw=xp(ddraw,1)
+        d1draw=ddraw[0]
+        d2draw=ddraw[1]
         stored[i,:]=ddraw.T
         z=z+1
         if doplot==1:
