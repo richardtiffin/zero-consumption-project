@@ -63,7 +63,7 @@ sq=np.squeeze
 plot=plt.plot
 
 gibbsno=1000
-mcno=100
+mcno=20
 doplot=0
 
 #### Generate data
@@ -72,16 +72,16 @@ t = 500
 # Covariance
 Sigmatrue = np.zeros((3,3))
 Sigmatrue[0,0] = 4
-Sigmatrue[0,1] = -0.7
-Sigmatrue[0,2] = -0.5
+Sigmatrue[0,1] = -0.1
+Sigmatrue[0,2] = -0.1
 Sigmatrue[1,0] = Sigmatrue[0,1]
 Sigmatrue[1,1] = 2
-Sigmatrue[1,2] = -0.3
+Sigmatrue[1,2] = -0.1
 Sigmatrue[2,0] = Sigmatrue[0,2]
 Sigmatrue[2,1] = Sigmatrue[1,2]
-Sigmatrue[2,2] = 5
-d1t = 0.5
-d2t = 0.5
+Sigmatrue[2,2] = 3
+d1t = 0.2
+d2t = 0.2
 gt=3
 b1t=4
 b2t=5
@@ -107,6 +107,7 @@ for j in range(0,mcno):
     #bdraw=conc((conc((g,b1)),b2))
     bdraw=(g,b1,b2)
     bdraw=xp(bdraw,1)
+    bdt=bdraw
     d1draw=1
     d2draw=1
     #storage arrays
@@ -116,7 +117,7 @@ for j in range(0,mcno):
 
     l=chol(Sigmatrue)
     e=rnorm(0,1,(t,3))
-    e=dot(l,e.T).T
+    e=dot(l.T,e.T).T
     x1=z1*d1t+xp(e[:,0],1)
     x2=z2*d2t+xp(e[:,1],1)
     y=w*gt+x1*b1t+x2*b2t+xp(e[:,2],1)
@@ -153,13 +154,14 @@ for j in range(0,mcno):
     for i in range(0,gibbsno):
         print("mc loop",j,"gibbs loop",i)
         # phi=inv(phi)
-        #sigdraw=iw.invwishartrand(t-1,phi)
-        #sigdraw=Sigmatrue
         e1=x1-z1*d1draw
         e2=x2-z2*d2draw
+        # bdraw=bdt
         e3=y-dot(xmat,bdraw)
         alle=conc((e1,e2,e3),1)
         phi=dot(alle.T,alle)
+        # sigdraw=iw.invwishartrand(t-1,phi)
+        # sigdraw=Sigmatrue
 
         s1=dot(e1.T,e1)
         om1=sp.invgamma.rvs(t,scale=s1)
@@ -181,12 +183,19 @@ for j in range(0,mcno):
         p31draw=p31p32draw[0]
         p32draw=p31p32draw[1]
         # p21draw=0
-        ia=conc(((1,0,0),(-1*p21draw,1,0),conc(conc((-1*p31draw,-1*p32draw,1),1),1)))
-        a=inv(ia)
-        # a=atrue
+        ia=zeros((2,3))
+        ia[0,0]=1
+        ia[1,0]=-1*p21draw
+        ia[1,1]=1
+        # ia=np.array([1,0,0],[-1*p21draw,1,0])
+        row3=conc((-1*p31draw,-1*p32draw,ones(1)),1)
+        row3=xp(row3,1)
+        ia=conc((ia,row3.T))
+        a1=inv(ia)
+        # a1=atrue
         h=((om1,0,0),(0,om2,0),(0,0,om3))
         # h=htrue
-        sigdraw=dot(a,dot(h,a.T))
+        sigdraw=dot(a1,dot(h,a1.T))
         stores[i,:]=np.reshape(sigdraw,(1,9))
 
         e12=conc((e1.T,e2.T),axis=0)
@@ -201,8 +210,11 @@ for j in range(0,mcno):
         bmean=dot(inv(dot(xtilde.T,xtilde)),dot(xtilde.T,ytilde1))
         # bmean=dot(inv(dot(xmat.T,xmat)),dot(xmat.T,y))
         varb=inv(dot(xtilde.T,xtilde))
+        # varb=inv(dot(xmat.T,xmat))
         bmeansq=sq(bmean,axis=1)
+        # varb=eye(3)
         bdraw=rmvnorm(bmeansq,varb)
+        # bdraw=bdt
         bdraw=xp(bdraw,1)
         storeb[i,:]=bdraw.T
         gamma=bdraw[0]
@@ -247,7 +259,7 @@ for j in range(0,mcno):
 print("mean beta", mean(storebmc,0))
 print("mean delta", mean(storedmc,0))
 print("mean sigma", mean(storesmc,0))
-plot(stores)
+plot(storeb)
 plt.show()
 
 # print("Sigmatrue", Sigmatrue)
