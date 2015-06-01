@@ -62,8 +62,8 @@ xp=np.expand_dims
 sq=np.squeeze
 plot=plt.plot
 
-gibbsno=1000
-mcno=20
+gibbsno=10000
+mcno=100
 doplot=0
 
 #### Generate data
@@ -87,8 +87,8 @@ b1t=4
 b2t=5
 burn=0.1*gibbsno
 plotint=1000
-z1=1*runif(t,1)
-z2=1*runif(t,1)
+z1=20*runif(t,1)
+z2=20*runif(t,1)
 w=ones((t,1))
 storebmc=zeros((mcno,3))
 storedmc=zeros((mcno,2))
@@ -165,12 +165,14 @@ for j in range(0,mcno):
 
         s1=dot(e1.T,e1)
         om1=sp.invgamma.rvs(t,scale=s1)
+        om1=float(om1)
         p21bar=dot(inv(s1),dot(e1.T,e2))
         p21var=om2*inv(s1)
         p21draw=rnorm(p21bar,p21var)
         u2=e2-e1*p21draw
         s2=dot(u2.T,u2)
         om2=sp.invgamma.rvs(t,scale=s2)
+        om2=float(om2)
         e1e2=conc((e1,e2),1)
         is3=inv(dot(e1e2.T,e1e2))
         p31p32bar=dot(is3,dot(e1e2.T,e3))
@@ -180,7 +182,10 @@ for j in range(0,mcno):
         u3=e3-dot(e1e2,p31p32draw)
         s3=dot(u3.T,u3)
         om3=sp.invgamma.rvs(t,scale=s3)
+        om3=float(om3)
+        # om3=htrue[2,2]
         p31draw=p31p32draw[0]
+        # p31draw=xp(atrue[2,0],1)
         p32draw=p31p32draw[1]
         # p21draw=0
         ia=zeros((2,3))
@@ -192,8 +197,10 @@ for j in range(0,mcno):
         row3=xp(row3,1)
         ia=conc((ia,row3.T))
         a1=inv(ia)
+        # a1[:,2]=atrue[:,2]
+        # a1[2,:]=atrue[2,:]
         # a1=atrue
-        h=((om1,0,0),(0,om2,0),(0,0,om3))
+        h=np.array([[om1,0,0],[0,om2,0],[0,0,om3]])
         # h=htrue
         sigdraw=dot(a1,dot(h,a1.T))
         stores[i,:]=np.reshape(sigdraw,(1,9))
@@ -203,8 +210,10 @@ for j in range(0,mcno):
         sig12=sigdraw[0:2,2]
         sig21=sig12.T
         sig22=sigdraw[0:2,0:2]
-        cmeane3=xp((dot(dot(sig12,inv(sig22)),e12)),1)
-        cvare3=sigdraw[2,2]-dot(dot(sig12,inv(sig22)),sig21)
+        # cmeane3a=xp((dot(dot(sig12,inv(sig22)),e12)),1)
+        cmeane3=dot(e1e2,p31p32draw)
+        # cvare3a=sigdraw[2,2]-dot(dot(sig12,inv(sig22)),sig21)
+        cvare3=h[2,2]
         ytilde1=(y-cmeane3)/cvare3
         xtilde=xmat/cvare3
         bmean=dot(inv(dot(xtilde.T,xtilde)),dot(xtilde.T,ytilde1))
@@ -260,6 +269,8 @@ print("mean beta", mean(storebmc,0))
 print("mean delta", mean(storedmc,0))
 print("mean sigma", mean(storesmc,0))
 plot(storeb)
+plt.show()
+plot(stores)
 plt.show()
 
 # print("Sigmatrue", Sigmatrue)
