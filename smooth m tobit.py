@@ -62,9 +62,9 @@ xp=np.expand_dims
 sq=np.squeeze
 plot=plt.plot
 
-gibbsno=10000
-mcno=100
-doplot=0
+gibbsno=5000
+mcno=5
+doplot=1
 
 #### Generate data
 t = 500
@@ -257,7 +257,7 @@ for j in range(0,mcno):
         z=z+1
         if doplot==1:
             if z==plotint:
-                plot(stores)
+                plot(stores[10:gibbsno,:])
                 plt.pause(0.001)
                 z=0
     storebmc[j,:]=mean(storeb[burn:gibbsno,:],0)
@@ -268,10 +268,10 @@ for j in range(0,mcno):
 print("mean beta", mean(storebmc,0))
 print("mean delta", mean(storedmc,0))
 print("mean sigma", mean(storesmc,0))
-plot(storeb)
-plt.show()
-plot(stores)
-plt.show()
+# plot(storeb)
+# plt.show()
+# plot(stores)
+# plt.show()
 
 # print("Sigmatrue", Sigmatrue)
 # print("ldl", ldl)
