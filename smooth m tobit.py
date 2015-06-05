@@ -214,8 +214,8 @@ for j in range(0,mcno):
         cmeane3=dot(e1e2,p31p32draw)
         # cvare3a=sigdraw[2,2]-dot(dot(sig12,inv(sig22)),sig21)
         cvare3=h[2,2]
-        ytilde1=(y-cmeane3)/cvare3
-        xtilde=xmat/cvare3
+        ytilde1=(y-cmeane3)/np.sqrt(cvare3)
+        xtilde=xmat/np.sqrt(cvare3)
         bmean=dot(inv(dot(xtilde.T,xtilde)),dot(xtilde.T,ytilde1))
         # bmean=dot(inv(dot(xmat.T,xmat)),dot(xmat.T,y))
         varb=inv(dot(xtilde.T,xtilde))
