@@ -61,7 +61,7 @@ conc = np.concatenate
 xp=np.expand_dims
 sq=np.squeeze
 plot=plt.plot
-
+AAAA
 gibbsno=5000
 mcno=20
 doplot=1
