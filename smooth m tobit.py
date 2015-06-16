@@ -1,4 +1,5 @@
 __author__ = 'richard tiffin'
+# richards feature
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as sp
