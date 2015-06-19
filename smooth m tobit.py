@@ -62,7 +62,7 @@ conc = np.concatenate
 xp=np.expand_dims
 sq=np.squeeze
 plot=plt.plot
-AAAA
+
 gibbsno=5000
 mcno=20
 doplot=1
@@ -127,6 +127,12 @@ for j in range(0,mcno):
     shapex=shape(xmat)
     nobs=shapex[0]
     z=0
+
+    ky=len(xmat[0])
+
+    ### Prior parameters
+    B0=0*ones()
+
 
     # Sigmatrue = np.matrix(np.zeros((4,4)))
     # Sigmatrue[0,0] = 2
@@ -229,10 +235,10 @@ for j in range(0,mcno):
         storeb[i,:]=bdraw.T
         gamma=bdraw[0]
         ytilde2=y-xp(xmat[:,0],1)*gamma
-        a=np.array([[1, 0, 0],[0, 1, 0]])
+        b=np.array([[1, 0, 0],[0, 1, 0]])
         lr=conc((bdraw[1:3,].T,ones((1,1))),1)
-        a=conc((a,lr))
-        omega=dot(dot(a,sigdraw),a.T)
+        b=conc((b,lr))
+        omega=dot(dot(b,sigdraw), b.T)
         iu=inv(chol(omega))
         xxy=conc((conc((x1,x2),1),ytilde2),1)
         uxxy=dot(iu.T,xxy.T).T
