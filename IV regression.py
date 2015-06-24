@@ -148,7 +148,7 @@ for i in range(0,draws):
     a31draw = adraw[0]
     a32draw = adraw[1]
 
-    # Draw sigma11, sigma22, sigma3|12
+    # Draw sigma11, sigma22
     sig11draw = np.array([scipy.stats.gamma.rvs(e1.T.dot(e1), loc=0, scale = 1.0/t)])
     sig11draw = sig11draw[None, :]
     sig22draw = np.array([scipy.stats.gamma.rvs(e2.T.dot(e2), loc=0, scale = 1.0/t)])
