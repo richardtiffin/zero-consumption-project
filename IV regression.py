@@ -92,18 +92,18 @@ storea = zeros((draws,2))
 
 for i in range(0,draws):
     print("gibbs loop",i)
-    d1draw = d1t
-    d2draw = d2t
-    sig3_12draw = sig3_12t
-    sig11draw = np.array([sig11t])[None,:]
-    sig22draw = np.array([sig22t])[None,:]
-    b1draw = b1t
-    b2draw = b2t
-    a31draw = a31t
-    a32draw = a32t
+    #d1draw = d1t
+    #d2draw = d2t
+    #sig3_12draw = sig3_12t
+    #sig11draw = np.array([sig11t])[None,:]
+    #sig22draw = np.array([sig22t])[None,:]
+    #b1draw = b1t
+    #b2draw = b2t
+    #a31draw = a31t
+    #a32draw = a32t
 
 
-    # Draw gammas and betas
+    # Draw gamma, beta1 and beta2
     a13 = Sigma[2,0]*inv(sig11draw)
     a23 = Sigma[2,1]*inv(sig22draw)
     e1 = x1-z1.dot(d1draw)
@@ -119,7 +119,7 @@ for i in range(0,draws):
     b2draw = xp(xp(gbdraw[s+1],axis=1),axis=1)
     e3 = y-w.dot(gdraw)-z1.dot(b1draw*d1draw)-z2.dot(b2draw*d2draw)-b1draw*e1-b2draw*e2
 
-    # Draw deltas
+    # Draw delta1 and delta2
     sig1_3 = Sigmatrue[0,0]-np.divide(Sigmatrue[0,2]**2,Sigmatrue[2,2])
     sig2_3 = Sigmatrue[1,1]-np.divide(Sigmatrue[1,2]**2,Sigmatrue[2,2])
     v3 = y-w.dot(gdraw)-b1draw*x1-b2draw*x2
