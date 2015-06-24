@@ -24,6 +24,15 @@ chol = np.linalg.cholesky
 inv = np.linalg.inv
 xp = np.expand_dims
 sq = np.squeeze
+np.random.seed(4)
+
+def draw_negative_norm(mu,h,n):
+    sigma = np.power(h,-0.5)
+    v=sp.norm.cdf(np.divide(-mu,sigma))
+    v*=np.random.uniform(0,1,n)
+    q=mu+sigma*sp.norm.ppf(v)
+    return q
+
 
 
 #************ Generate data ***********#
@@ -57,41 +66,49 @@ H[2,2] = sig3_12t
 
 Sigmatrue = A.dot(H).dot(A.T)
 
-z1=20*runif(t,p1)
-z2=20*runif(t,p2)
+z1=2*runif(t,p1)
+z2=3*runif(t,p2)
 d1t = xp(rnorm(8,1,p1),1)
 d2t = xp(rnorm(5,1,p2),1)
 w = np.c_[np.ones((t)),rnorm(6,1,(t,s-1))]
-gt = xp(rnorm(6,1,s),1)
+gt = xp(rnorm(1,1,s),1)
 l = chol(Sigmatrue)
 e0 = rnorm(0,1,(t,3))
 e = e0.dot(l.T)
-b1t = rnorm(3,1,1)
+b1t = rnorm(-3,1,1)
 b2t = rnorm(4,1,1)
 x1 = z1.dot(d1t)+xp(e[:,0],axis=1)
 x2 = z2.dot(d2t)+xp(e[:,1],axis=1)
-y = w.dot(gt)+x1*b1t+x2*b2t+xp(e[:,2],axis=1)
-
+y = w.dot(gt)+ x1*b1t +x2*b2t+xp(e[:,2],axis=1)
+ystart = y.copy()
+y[y<=0]=0
+cens = (y<=0).sum()/t
 
 # Starting values #
-a31draw = 1
-a32draw = 1
+a31draw = np.ones((1,1))
+a32draw = np.ones((1,1))
 Sigma = eye(3)
 sig11draw = ones((1,1))
 sig22draw = ones((1,1))
 sig3_12draw = ones((1,1))
 d1draw = ones((p1,1))
 d2draw = ones((p1,1))
+gdraw = ones((s,1))
+b1draw = ones((1,1))
+b2draw = ones((1,1))
+ystar = zeros((t,1))
 # Storage matrices
 storegb = zeros((draws,s+2))
 stored1 = zeros((draws,p1))
 stored2 = zeros((draws,p2))
 storesig = zeros((draws,6))
 storea = zeros((draws,2))
+e1 = xp(rnorm(0,1,t),1)
+e2 = xp(rnorm(0,1,t),1)
 
 
 for i in range(0,draws):
-    print("gibbs loop",i)
+    print("gibbs loop",i, "censoring", cens)
     #d1draw = d1t
     #d2draw = d2t
     #sig3_12draw = sig3_12t
@@ -102,13 +119,20 @@ for i in range(0,draws):
     #a31draw = a31t
     #a32draw = a32t
 
+    # Draw ystar for censored observations from negative truncated normal distribution
+    e3 = e1*a32draw + e2*a32draw
+    yhat = w.dot(gdraw) + b1draw*x1 + b2draw*x2 + e3
+    for r in range(t):
+        if ystar[r] <=0:
+           ystar[r] = sp.truncnorm.rvs(-100000,0,loc=yhat[r],scale=np.divide(1,sig3_12draw),size=1)
+           #ystar[r]= draw_negative_norm(yhat[r],np.divide(1,sig3_12draw),1)
 
     # Draw gamma, beta1 and beta2
     a13 = Sigma[2,0]*inv(sig11draw)
     a23 = Sigma[2,1]*inv(sig22draw)
     e1 = x1-z1.dot(d1draw)
     e2 = x2-z2.dot(d2draw)
-    yt = np.divide((y-(a13*e1)-(a23*e2)),sqrt(sig3_12draw))
+    yt = np.divide((ystar-(a13*e1)-(a23*e2)),sqrt(sig3_12draw))
     xt = np.divide(np.c_[w,x1,x2],sqrt(sig3_12draw))
     gbmean = dot(inv(dot(xt.T,xt)),dot(xt.T,yt))
     gbcov = inv(dot(xt.T,xt))
@@ -117,12 +141,12 @@ for i in range(0,draws):
     gdraw = xp(gbdraw[0:s],axis=1)
     b1draw = xp(xp(gbdraw[s],axis=1),axis=1)
     b2draw = xp(xp(gbdraw[s+1],axis=1),axis=1)
-    e3 = y-w.dot(gdraw)-z1.dot(b1draw*d1draw)-z2.dot(b2draw*d2draw)-b1draw*e1-b2draw*e2
+    e3 = ystar-w.dot(gdraw)-z1.dot(b1draw*d1draw)-z2.dot(b2draw*d2draw)-b1draw*e1-b2draw*e2
 
     # Draw delta1 and delta2
     sig1_3 = Sigmatrue[0,0]-np.divide(Sigmatrue[0,2]**2,Sigmatrue[2,2])
     sig2_3 = Sigmatrue[1,1]-np.divide(Sigmatrue[1,2]**2,Sigmatrue[2,2])
-    v3 = y-w.dot(gdraw)-b1draw*x1-b2draw*x2
+    v3 = ystar-w.dot(gdraw)-b1draw*x1-b2draw*x2
     xtd1 = np.divide(x1-v3*a31draw*a32draw,sqrt(sig1_3))
     xtd2 = np.divide(x2-v3*a31draw*a32draw,sqrt(sig2_3))
     ztd1 = np.divide(z1,sqrt(sig1_3))
@@ -145,8 +169,9 @@ for i in range(0,draws):
     acov = inv(dot(e12.T,e12))
     adraw = rmvnorm(sq(amean,axis=1),acov)
     storea[i,:] = adraw
-    a31draw = adraw[0]
-    a32draw = adraw[1]
+    a31draw = np.array([adraw[0]])
+    a32draw = np.array([adraw[1]])
+
 
     # Draw sigma11, sigma22
     sig11draw = np.array([scipy.stats.gamma.rvs(e1.T.dot(e1), loc=0, scale = 1.0/t)])
