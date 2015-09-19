@@ -57,20 +57,24 @@ H[2,2] = sig3_12t
 
 Sigmatrue = A.dot(H).dot(A.T)
 
-z1=20*runif(t,p1)
-z2=20*runif(t,p2)
-d1t = xp(rnorm(8,1,p1),1)
-d2t = xp(rnorm(5,1,p2),1)
-w = np.c_[np.ones((t)),rnorm(6,1,(t,s-1))]
-gt = xp(rnorm(6,1,s),1)
+z1=8*runif(t,p1)
+z2=8*runif(t,p2)
+d1t = xp(rnorm(3,1,p1),1)
+d2t = xp(rnorm(4,1,p2),1)
+w = np.c_[np.ones((t)),rnorm(10,1,(t,s-1))]
+gt = xp(rnorm(7,1,s),1)
 l = chol(Sigmatrue)
 e0 = rnorm(0,1,(t,3))
 e = e0.dot(l.T)
-b1t = rnorm(3,1,1)
-b2t = rnorm(4,1,1)
+b1t = rnorm(8,1,1)
+b2t = rnorm(10,1,1)
 x1 = z1.dot(d1t)+xp(e[:,0],axis=1)
 x2 = z2.dot(d2t)+xp(e[:,1],axis=1)
 y = w.dot(gt)+x1*b1t+x2*b2t+xp(e[:,2],axis=1)
+ystartrue = y.copy()
+y[y<=0]=0
+cens = (y<=0).sum()/t
+
 
 
 # Starting values #
@@ -91,16 +95,16 @@ storea = zeros((draws,2))
 
 
 for i in range(0,draws):
-    print("gibbs loop",i)
-    d1draw = d1t
-    d2draw = d2t
-    sig3_12draw = sig3_12t
-    sig11draw = np.array([sig11t])[None,:]
-    sig22draw = np.array([sig22t])[None,:]
-    b1draw = b1t
-    b2draw = b2t
-    a31draw = a31t
-    a32draw = a32t
+    print("gibbs loop",i, "censoring", cens)
+    # d1draw = d1t
+    # d2draw = d2t
+    # sig3_12draw = sig3_12t
+    # sig11draw = np.array([sig11t])[None,:]
+    # sig22draw = np.array([sig22t])[None,:]
+    # b1draw = b1t
+    # b2draw = b2t
+    # a31draw = a31t
+    # a32draw = a32t
 
 
     # Draw gammas and betas
@@ -148,6 +152,7 @@ for i in range(0,draws):
     a31draw = adraw[0]
     a32draw = adraw[1]
 
+
     # Draw sigma11, sigma22, sigma3|12
     sig11draw = np.array([scipy.stats.gamma.rvs(e1.T.dot(e1), loc=0, scale = 1.0/t)])
     sig11draw = sig11draw[None, :]
@@ -167,6 +172,16 @@ for i in range(0,draws):
     Sigma[2,2] = sig3_12draw+np.divide(Sigma[0,2]**2,sig11draw)+np.divide(Sigma[1,2]**2,sig22draw)
     storesig[i,:] = Sigma[np.triu_indices(3)]
 
+    # Draw ystar for censored observations from negative truncated normal distribution
+    e1 = x1-z1.dot(d1draw)
+    e2 = x2-z2.dot(d2draw)
+    e3_ = np.multiply(a31draw,e1)+np.multiply(a32draw,e2)
+    yhat = w.dot(gdraw)-z1.dot(b1draw*d1draw)-z2.dot(b2draw*d2draw)+e3_
+    for r in range(t):
+        if y[r] <=0:
+            y[r]= draw_negative_norm(yhat[r],1/sigma3_12[i],1)
+
+    y = y.copy()
 
 
 
